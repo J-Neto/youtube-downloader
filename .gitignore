@@ -1,17 +1,17 @@
-# Virtual Environment
+# Virtual Environment 
 .venv/
-env/ 
+env/
 venv/
 
-# Python Cache & Compiled Files
-__pycache__/
+# Python Cache & Compiled Files 
+__pycache__/ 
 *.pyc 
 *.pyo 
 *.pyd
 
-# Local Environment Variables
+# Local Environment Variables 
 .env
 
-# IDE / Editor Settings
-.vscode/
+# IDE / Editor Settings 
+.vscode/ 
 .idea/
