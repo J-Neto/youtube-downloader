@@ -1,5 +1,5 @@
 import yt_dlp
-from exceptions import StreamExtractionError, VideoNotFoundError
+from src.exceptions import StreamExtractionError, VideoNotFoundError
 
 class YoutubeService:
   """Service class responsible for interacting with the yt-dlp library."""

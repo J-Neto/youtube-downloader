@@ -1,6 +1,6 @@
 import sys
-from exceptions import DownloaderError, StreamExtractionError, VideoNotFoundError
-from youtube_service import YoutubeService
+from src.exceptions import DownloaderError, StreamExtractionError, VideoNotFoundError
+from src.youtube_service import YoutubeService
 
 def format_stream_table(streams: list[dict]) -> str:
   """Format stream list into an aligned table string for terminal output."""
@@ -20,7 +20,7 @@ def format_stream_table(streams: list[dict]) -> str:
   return "\n".join(lines)
 
 def main() -> None:
-  url = 'https://www.youtube.com/watch?v=D9sdassd1NbRl07OYsss'
+  url = 'https://www.youtube.com/watch?v=D91NbRl07OY&t=2s'
   
   service = YoutubeService()
   
