@@ -1,4 +1,5 @@
 import yt_dlp
+from exceptions import StreamExtractionError, VideoNotFoundError
 
 class YoutubeService:
   """Service class responsible for interacting with the yt-dlp library."""
@@ -7,7 +8,7 @@ class YoutubeService:
     # Default options to silence verbose logs and enable Node.js JS runtime
     default_opts = {
       "quiet": True,
-      "no_warning": True,
+      "no_warnings": True,
       "js_runtimes": {"node": {}},
     }
     
@@ -18,8 +19,36 @@ class YoutubeService:
     
   def get_video_info(self, url: str) -> dict:
     """Extract video info without downloading"""
-    with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
-      return ydl.extract_info(url, download=False)
+    try:
+      with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
+        return ydl.extract_info(url, download=False)
+    
+    except yt_dlp.utils.DownloadError as err:  
+      error_msg = str(err).lower()
+      
+      invalid_url_keywords = [ 
+        "is not a valid url",
+        "incomplete youtube id",
+        "video is unavailable",
+        "video unavailable",
+        "private video",
+        "has been removed",
+      ]
+      
+      if any(keyword in error_msg for keyword in invalid_url_keywords):
+        raise VideoNotFoundError(
+          f"The provided URL is invalid or video does not exist: {url}"
+        ) from err 
+        
+      raise StreamExtractionError(
+        f"Failed to extract video information: {err}"
+      ) from err
+      
+    except Exception as err:
+      raise StreamExtractionError(
+        f"An unexpected error occurred during extraction: {err}"
+      ) from err
+          
     
   def get_available_streams(self, url: str) -> dict:
     """Extract title and a processed list of streams ready for CLI/GUI consumption."""

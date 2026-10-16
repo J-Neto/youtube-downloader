@@ -1,4 +1,5 @@
 import sys
+from exceptions import DownloaderError, StreamExtractionError, VideoNotFoundError
 from youtube_service import YoutubeService
 
 def format_stream_table(streams: list[dict]) -> str:
@@ -19,7 +20,7 @@ def format_stream_table(streams: list[dict]) -> str:
   return "\n".join(lines)
 
 def main() -> None:
-  url = 'https://www.youtube.com/watch?v=D91NbRl07OY'
+  url = 'https://www.youtube.com/watch?v=D9sdassd1NbRl07OYsss'
   
   service = YoutubeService()
   
@@ -30,8 +31,21 @@ def main() -> None:
     print(f"\nVideo: {data['title']}\n")
     print(format_stream_table(data['streams']))
   
+  except VideoNotFoundError as err: 
+    print(f"\n[Error] Invalid or unreachable video: {err}", file=sys.stderr) 
+    sys.exit(1)
+  
+  except StreamExtractionError as err: 
+    print(f"\n[Error] Could not extract video streams: {err}", file=sys.stderr)
+    sys.exit(1)
+  
+  except DownloaderError as err: 
+    print(f"\n[Error] Downloader application error: {err}", file=sys.stderr) 
+    sys.exit(1)
+  
   except Exception as err:
-    print(f"Error processing video: {err}", file=sys.stderr)
+    print(f"\n[Unexpected Error] An unhandled issue occurred: {err}", file=sys.stderr) 
+    sys.exit(1)
     
 if __name__ == "__main__":
   main()
