@@ -15,3 +15,6 @@ __pycache__/
 # IDE / Editor Settings 
 .vscode/ 
 .idea/
+
+# Download directory
+downloads/

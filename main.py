@@ -20,7 +20,12 @@ def format_stream_table(streams: list[dict]) -> str:
   return "\n".join(lines)
 
 def main() -> None:
-  url = 'https://www.youtube.com/watch?v=D91NbRl07OY&t=2s'
+  # url = 'https://www.youtube.com/watch?v=D91NbRl07OY&t=2s'
+  url = input("Enter YouTube video URL: ").strip()
+  
+  if not url:
+    print('[Error] URL cannot be empty.', file=sys.stderr)
+    sys.exit(1)
   
   service = YoutubeService()
   
@@ -30,6 +35,33 @@ def main() -> None:
     
     print(f"\nVideo: {data['title']}\n")
     print(format_stream_table(data['streams']))
+    
+    available_ids = [stream["format_id"] for stream in data["streams"]]
+    
+    while True:
+      format_id = input("\nEnter the Format ID you want to download (or press Enter to cancel): ").strip()
+    
+      if not format_id:
+        confirm = (
+          input("Are you sure you want to cancel and exit? (Y/n): ")
+          .strip()
+          .lower()
+        )
+        if confirm in ["", "y", "yes"]:
+          print("Download cancelled by user.")
+          return
+        continue
+
+      if format_id not in available_ids:
+        print(f"\n[Warning] Format ID '{format_id}' is not valid. Please select an ID from the table above." )
+        continue
+        
+      break
+        
+
+    print(f"Downloading format '{format_id}'...")
+    output_dir = service.download_stream(url, format_id)
+    print(f"\n✅ Download completed successfully! Saved in directory: '{output_dir}'")
   
   except VideoNotFoundError as err: 
     print(f"\n[Error] Invalid or unreachable video: {err}", file=sys.stderr) 

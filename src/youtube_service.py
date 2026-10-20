@@ -7,8 +7,10 @@ class YoutubeService:
     
     # Default options to silence verbose logs and enable Node.js JS runtime
     default_opts = {
-      "quiet": True,
+      "quiet": False,
       "no_warnings": True,
+      "noplaylist": True,
+      "socket_timeout": 10,
       "js_runtimes": {"node": {}},
     }
     
@@ -48,8 +50,7 @@ class YoutubeService:
       raise StreamExtractionError(
         f"An unexpected error occurred during extraction: {err}"
       ) from err
-          
-    
+            
   def get_available_streams(self, url: str) -> dict:
     """Extract title and a processed list of streams ready for CLI/GUI consumption."""
     info = self.get_video_info(url)
@@ -84,3 +85,24 @@ class YoutubeService:
       "title": title,
       "streams": processed_streams
     }
+    
+  def download_stream(self, url: str, format_id: str, output_dir: str = "downloads") -> str:
+    """Download a specific stream format to the specified directory."""
+    download_opts = {
+      **self.ydl_opts,
+      "format": format_id,
+      "outtmpl": f"{output_dir}/%(title)s.%(ext)s",
+    }
+    
+    try:
+      with yt_dlp.YoutubeDL(download_opts) as ydl:
+        ydl.download([url])
+        return output_dir
+    except yt_dlp.utils.DownloadError as err:
+      raise StreamExtractionError(
+        f"Failed to download format '{format_id}': {err}"
+      ) from err
+    except Exception as err:
+      raise StreamExtractionError(
+        f"An unexpected error occurred during download: {err}"
+      ) from err

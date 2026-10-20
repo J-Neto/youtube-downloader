@@ -94,3 +94,31 @@ def test_get_available_streams_filters_empty_codecs(
   assert data["title"] == "Sample Video"
   assert len(data["streams"]) == 1
   assert data["streams"][0]["format_id"] == "137"
+  
+  
+@patch("src.youtube_service.yt_dlp.YoutubeDL")
+def test_download_stream_success(mock_youtube_dl: MagicMock) -> None:
+  """Test successful stream download using a mock."""
+  mock_instance = MagicMock()
+  mock_youtube_dl.return_value.__enter__.return_value = mock_instance
+  
+  service = YoutubeService()
+  output_dir = service.download_stream("http://example.com", "18", output_dir="downloads")
+  
+  assert output_dir == "downloads"
+  mock_instance.download.assert_called_once_with(["http://example.com"])
+
+
+@patch("src.youtube_service.yt_dlp.YoutubeDL")
+def test_download_stream_raises_stream_extraction_error(
+  mock_youtube_dl: MagicMock,
+) -> None:
+  """Test that StreamExtractionError is raised if download fails."""
+  mock_instance = MagicMock()
+  mock_instance.download.side_effect = yt_dlp.utils.DownloadError("Download failed")
+  mock_youtube_dl.return_value.__enter__.return_value = mock_instance
+  
+  service = YoutubeService()
+  
+  with pytest.raises(StreamExtractionError):
+    service.download_stream("http://example.com", "18")
