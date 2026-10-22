@@ -122,3 +122,70 @@ def test_download_stream_raises_stream_extraction_error(
   
   with pytest.raises(StreamExtractionError):
     service.download_stream("http://example.com", "18")
+
+
+@pytest.fixture
+def service() -> YoutubeService:
+  """Fixture to supply a clean YoutubeService instance."""
+  return YoutubeService()
+
+def test_download_audio_success(service: YoutubeService) -> None:
+  """Test successful audio download configuration and execution."""
+  url = "https://www.youtube.com/watch?v=D91NbRl07OY&t=2s"
+  with patch("yt_dlp.YoutubeDL") as mock_yt_dlp:
+    mock_instance = MagicMock()
+    mock_yt_dlp.return_value.__enter__.return_value = mock_instance
+    
+    output_dir = service.download_audio(url, output_dir="test_downloads")
+    
+    assert output_dir == "test_downloads"
+    mock_yt_dlp.assert_called_once()
+    
+    # Verify that postprocessors for MP3 conversion were configured
+    opts_passed = mock_yt_dlp.call_args[0][0]
+    assert opts_passed["format"] == "bestaudio/best"
+    assert opts_passed["postprocessors"][0]["key"] == "FFmpegExtractAudio"
+    assert opts_passed["postprocessors"][0]["preferredcodec"] == "mp3"
+    
+    mock_instance.download.assert_called_once_with([url])
+    
+def test_download_audio_failure(service: YoutubeService) -> None:
+  """Test exception raising when audio download fails."""
+  url = "https://www.youtube.com/watch?v=D91NbRl07OY&t=2s"
+  with patch("yt_dlp.YoutubeDL") as mock_yt_dlp:
+    mock_instance = MagicMock()
+    mock_instance.download.side_effect = yt_dlp.utils.DownloadError("Audio error")
+    mock_yt_dlp.return_value.__enter__.return_value = mock_instance
+    
+    with pytest.raises(StreamExtractionError) as exc_info:
+        service.download_audio(url)
+        
+    assert "Failed to download audio" in str(exc_info.value)
+
+def test_get_available_streams_filtering(service: YoutubeService) -> None:
+  """Test that stream filtering returns deduplicated resolutions and ignores audio-only formats."""
+  url = "https://www.youtube.com/watch?v=D91NbRl07OY&t=2s"
+  mock_raw_info = {
+    "title": "Test Video",
+    "formats": [
+        {"format_id": "140", "vcodec": "none", "acodec": "mp4a.40.2", "height": None, "ext": "m4a"},  # Audio only
+        {"format_id": "137", "vcodec": "avc1.640028", "acodec": "none", "height": 1080, "width": 1920, "ext": "mp4"},
+        {"format_id": "248", "vcodec": "vp9", "acodec": "none", "height": 1080, "width": 1920, "ext": "webm"},
+        {"format_id": "136", "vcodec": "avc1.4D401F", "acodec": "none", "height": 720, "width": 1280, "ext": "mp4"},
+    ],
+  }
+  
+  with patch.object(service, "get_video_info", return_value=mock_raw_info):
+    result = service.get_available_streams(url)
+    
+    assert result["title"] == "Test Video"
+    # Should return exactly 2 streams (1080p and 720p), excluding audio-only
+    assert len(result["streams"]) == 2
+    
+    # 1080p should select MP4 (avc1) due to higher score over webm (vp9)
+    assert result["streams"][0]["format_id"] == "137"
+    assert result["streams"][0]["resolution"] == "1080p (1920x1080)"
+    
+    # 720p stream check
+    assert result["streams"][1]["format_id"] == "136"
+    assert result["streams"][1]["resolution"] == "720p (1280x720)"
