@@ -19,15 +19,31 @@ class YoutubeService:
       
     self.ydl_opts = default_opts
     
+  def _validate_url(self, url: str) -> None:
+    """Validate whether the input URL is a direct video or supported media link."""
+    unsupported_patterns = ["/results", "search_query=", "/channel/", "/c/", "/@"]
+    
+    if any(pattern in url for pattern in unsupported_patterns):
+      raise VideoNotFoundError(
+        "Search or channel URLs are not supported. Please provide a direct YouTube video URL."
+      )
+    
   def get_video_info(self, url: str) -> dict:
     """Extract video info without downloading"""
+    
+    # Validate URL format before call yt-dlp
+    self._validate_url(url)
     try:
       with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
-        return ydl.extract_info(url, download=False)
+        info = ydl.extract_info(url, download=False)
+        if not info:
+          raise VideoNotFoundError(
+            f"No information could be extracted for URL: {url}"
+          )
+        return info
     
     except yt_dlp.utils.DownloadError as err:  
       error_msg = str(err).lower()
-      
       invalid_url_keywords = [ 
         "is not a valid url",
         "incomplete youtube id",

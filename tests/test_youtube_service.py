@@ -189,3 +189,10 @@ def test_get_available_streams_filtering(service: YoutubeService) -> None:
     # 720p stream check
     assert result["streams"][1]["format_id"] == "136"
     assert result["streams"][1]["resolution"] == "720p (1280x720)"
+    
+def test_get_video_info_rejects_search_url(service: YoutubeService) -> None:
+  """Test that search result URLs raise VideoNotFoundError immediately."""
+  search_url = "https://www.youtube.com/results?search_query=supermassive+black+hole+muse"
+  with pytest.raises(VideoNotFoundError) as exc_info:
+      service.get_video_info(search_url)
+  assert "Search or channel URLs are not supported" in str(exc_info.value)
